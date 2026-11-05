@@ -3,60 +3,84 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>TripCost Planner</title>
+<title>Jalanjalantrosss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html,body{max-width:100%;overflow-x:hidden}
-  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+  body{font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+  body{background:linear-gradient(180deg,#fff1f5 0%,#fdf2f8 45%,#f5f3ff 100%) fixed}
   .no-scrollbar::-webkit-scrollbar{display:none}
   input,select{font-size:16px} /* cegah zoom otomatis iOS */
   @media(min-width:640px){input,select{font-size:14px}}
 </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
+<body class="text-slate-800 min-h-screen">
 <script>
 // URL Web App Google Apps Script (hasil Deploy). Kosong = MODE DEMO (localStorage).
 const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXSjlaSOAcWdwcqaKqCZO-I71-uIIYBpybqEvLGWZCeq19xPA/exec';
 </script>
 
-<header class="bg-slate-900 text-white sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
-  <div class="max-w-7xl mx-auto px-3 py-2.5 flex items-center gap-2">
-    <span class="text-xl shrink-0">📍</span>
+<header class="bg-white/90 backdrop-blur border-b border-pink-100 sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+  <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2">
+    <button id="bBack" onclick="goHome()" title="Semua trip" class="hidden w-9 h-9 shrink-0 rounded-full bg-rose-50 text-rose-600 font-bold">←</button>
+    <span class="w-9 h-9 shrink-0 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center shadow-md shadow-pink-200">📍</span>
     <div class="flex-1 min-w-0">
-      <select id="tripSel" onchange="pickTrip(this.value)" class="w-full bg-transparent text-white font-bold truncate focus:outline-none appearance-none" style="font-size:16px"></select>
-      <p id="tripSub" class="text-[11px] text-slate-300 truncate"></p>
+      <p id="hTitle" class="font-black truncate leading-tight text-rose-950">Jalanjalantrosss</p>
+      <p id="tripSub" class="text-[11px] font-semibold text-rose-400 truncate"></p>
     </div>
-    <button onclick="loadData()" title="Sinkron" class="w-9 h-9 shrink-0 rounded-lg bg-slate-700 text-sm">↻</button>
-    <button onclick="openTrip(S.tripId)" title="Pengaturan trip" class="w-9 h-9 shrink-0 rounded-lg bg-slate-700 text-sm">⚙️</button>
-    <button onclick="openModal()" class="h-9 px-3 shrink-0 rounded-lg bg-blue-600 text-sm font-semibold">＋<span class="hidden sm:inline"> Kegiatan</span></button>
+    <button onclick="loadData()" title="Sinkron" class="w-9 h-9 shrink-0 rounded-full bg-rose-50 text-rose-600 text-sm">↻</button>
+    <button id="bSet" onclick="openTrip(S.tripId)" title="Pengaturan trip" class="hidden w-9 h-9 shrink-0 rounded-full bg-rose-50 text-sm">⚙️</button>
+    <button id="bAdd" onclick="openModal()" class="hidden h-9 px-3 shrink-0 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-200">＋<span class="hidden sm:inline"> Kegiatan</span></button>
+    <button id="bNew" onclick="openTrip('')" class="h-9 px-3 shrink-0 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-200">＋<span class="hidden sm:inline"> Trip Baru</span></button>
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
-  <div id="welcome" class="hidden bg-white rounded-2xl p-6 text-center space-y-3">
-    <p class="text-lg font-bold">Belum ada trip</p>
-    <p class="text-sm text-slate-500">Buat rencana perjalanan baru, atau muat contoh Trip Bandung 6–11 Nov 2026.</p>
-    <div class="flex flex-col sm:flex-row gap-2 justify-center">
-      <button onclick="openTrip('')" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white font-semibold text-sm">＋ Buat Trip Baru</button>
-      <button onclick="seedAll()" class="px-4 py-2.5 rounded-lg border text-sm">Muat contoh Trip Bandung</button>
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-4 pb-24 md:pb-10 space-y-4">
+  <!-- BERANDA: daftar semua trip -->
+  <div id="home" class="space-y-5">
+    <div class="space-y-1">
+      <h1 class="text-xl sm:text-3xl font-black text-rose-950 leading-tight">Mau Liburan ke Mana Kita Kali Ini? ✈️</h1>
+      <p class="text-sm text-slate-600 max-w-2xl">Yuk, catat ide jalan-jalan seru kita, hitung estimasi biaya santai, dan susun rute pacaran tanpa pusing berdua!</p>
     </div>
+    <div class="rounded-3xl border border-white/70 shadow-sm bg-gradient-to-br from-pink-200 via-rose-100 to-purple-200 p-5 sm:p-8 flex items-center gap-4">
+      <div class="flex-1 min-w-0">
+        <span class="inline-block -rotate-2 bg-white shadow-sm rounded-lg px-2.5 py-1 text-[11px] font-extrabold text-rose-600">Adventure is calling!</span>
+        <h2 class="text-xl sm:text-3xl font-black text-rose-950 leading-tight mt-2">Rencanakan Setiap Petualangan Kita, Hitung Semua Biayanya Tanpa Ribet!</h2>
+        <p class="text-xs sm:text-sm text-rose-900/80 mt-2">Setiap trip kita punya kenangan, peta, dan anggaran sendiri. Pilih atau buat baru yuk!</p>
+        <button onclick="openTrip('')" class="hidden sm:inline-flex mt-4 items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-300">＋ Tambah Rencana Baru</button>
+      </div>
+      <div class="shrink-0 text-5xl sm:text-7xl leading-none select-none" aria-hidden="true">🧳</div>
+    </div>
+    <div id="tripGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div id="homeSample" class="hidden text-center"><button onclick="seedAll()" class="text-sm text-rose-500 underline">Atau muat contoh Trip Bandung 6–11 Nov 2026</button></div>
   </div>
 
-  <div id="app" class="space-y-4">
-    <section id="summary" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2.5"></section>
-    <div id="bar" class="h-2.5 rounded-full overflow-hidden flex bg-slate-200"></div>
+  <div id="app" class="hidden space-y-4">
+    <div class="rounded-3xl border border-white/70 shadow-sm bg-gradient-to-br from-pink-200 via-rose-100 to-purple-200 p-5 sm:p-7">
+      <p class="text-[11px] font-extrabold uppercase tracking-widest text-rose-500">Rencana Perjalanan</p>
+      <h1 id="heroTitle" class="text-2xl sm:text-4xl font-black text-rose-950 mt-1 leading-tight break-words"></h1>
+      <p id="heroSub" class="text-xs sm:text-sm font-medium text-rose-900/80 mt-1"></p>
+      <div id="heroStats" class="flex flex-wrap gap-2 mt-4 text-xs font-bold text-rose-800"></div>
+    </div>
+    <section id="summary" class="grid grid-cols-2 lg:grid-cols-6 gap-3"></section>
+    <div class="bg-white border border-pink-100 rounded-2xl p-3 shadow-sm space-y-1.5">
+      <div class="flex justify-between gap-2 text-[11px] font-bold text-slate-500"><span>Persentase Alokasi Budget</span><span class="shrink-0">100% Terencana</span></div>
+      <div id="bar" class="h-3 rounded-full overflow-hidden flex bg-slate-100"></div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <section class="lg:col-span-2 min-w-0 space-y-3">
         <div id="tabs" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full"></div>
         <div id="timeline" class="space-y-3"></div>
-        <button onclick="openModal()" class="w-full py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 text-sm font-medium">＋ Tambah Kegiatan</button>
+        <button onclick="openModal()" class="w-full py-3 rounded-2xl border-2 border-dashed border-pink-300 text-rose-400 hover:border-rose-400 hover:text-rose-600 text-sm font-bold">＋ Tambah Kegiatan</button>
       </section>
 
       <aside class="min-w-0 space-y-4">
-        <div class="bg-white rounded-2xl shadow-sm p-3 sm:p-4">
+        <div class="bg-white border border-pink-100 rounded-3xl shadow-sm p-4">
           <div class="flex items-center justify-between mb-2 gap-2"><h2 class="font-semibold">Peta &amp; Rute</h2>
-            <a id="gmLink" href="#" target="_blank" rel="noopener" class="text-xs text-blue-600 font-semibold shrink-0">Buka Google Maps ↗</a></div>
+            <a id="gmLink" href="#" target="_blank" rel="noopener" class="text-xs text-rose-600 font-semibold shrink-0">Buka Google Maps ↗</a></div>
           <div class="flex gap-2 mb-2 text-xs">
             <button id="bRoute" onclick="setMap('route')" class="px-3 py-1.5 rounded-full border">Seluruh trip</button>
             <button id="bDay" onclick="setMap('day')" class="px-3 py-1.5 rounded-full border">Rute hari ini</button>
@@ -64,14 +88,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXS
           <iframe id="gmap" class="w-full h-64 rounded-xl border-0 bg-slate-100" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Google Maps"></iframe>
           <div id="pinList" class="mt-2 max-h-48 overflow-y-auto space-y-1"></div>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm p-3 sm:p-4">
+        <div class="bg-white border border-pink-100 rounded-3xl shadow-sm p-4">
           <div class="flex items-center justify-between mb-3"><h2 class="font-semibold">Peserta (<span id="mcount"></span>)</h2>
-            <button onclick="openTrip(S.tripId)" class="text-xs text-blue-600 font-semibold">Atur</button></div>
+            <button onclick="openTrip(S.tripId)" class="text-xs text-rose-600 font-semibold">Atur</button></div>
           <div id="members" class="grid grid-cols-2 gap-3"></div>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm p-3 sm:p-4">
+        <div class="bg-white border border-pink-100 rounded-3xl shadow-sm p-4">
           <div class="flex items-center justify-between mb-3"><h2 class="font-semibold">Kendaraan &amp; BBM</h2>
-            <button onclick="openTrip(S.tripId)" class="text-xs text-blue-600 font-semibold">Atur</button></div>
+            <button onclick="openTrip(S.tripId)" class="text-xs text-rose-600 font-semibold">Atur</button></div>
           <div id="vehs" class="space-y-2 text-sm"></div>
         </div>
       </aside>
@@ -81,101 +105,114 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXS
 
 <!-- MODAL KEGIATAN -->
 <div id="modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center">
-  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-5 space-y-3">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-5 space-y-3">
     <h3 id="mTitle" class="font-bold text-lg">Kegiatan</h3>
     <input type="hidden" id="fId">
     <div class="grid grid-cols-2 gap-3">
-      <label class="text-xs font-medium">Tanggal<input id="fDate" type="date" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
-      <label class="text-xs font-medium">Jam<input id="fTime" type="time" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
+      <label class="text-xs font-medium">Tanggal<input id="fDate" type="date" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
+      <label class="text-xs font-medium">Jam<input id="fTime" type="time" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
     </div>
     <label class="text-xs font-medium block">Kendaraan / Transportasi
-      <select id="fVeh" onchange="syncRows()" class="mt-1 w-full border rounded-lg px-2 py-2"></select></label>
-    <label class="text-xs font-medium block">Nama Lokasi / Kegiatan<input id="fPlace" placeholder="mis. Noah's Park" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
-    <label class="text-xs font-medium block">Catatan<input id="fNote" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
+      <select id="fVeh" onchange="syncRows()" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></select></label>
+    <label class="text-xs font-medium block">Nama Lokasi / Kegiatan<input id="fPlace" placeholder="mis. Noah's Park" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
+    <label class="text-xs font-medium block">Catatan<input id="fNote" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
     <div class="space-y-2">
       <span class="text-xs font-medium">Titik Lokasi (Google Maps)</span>
       <div class="flex gap-2">
-        <input id="fLink" placeholder="Tempel link Google Maps…" class="flex-1 min-w-0 border rounded-lg px-2 py-2" oninput="clearTimeout(window.__lt);window.__lt=setTimeout(applyLink,350)">
-        <button type="button" onclick="pasteLink()" class="px-3 rounded-lg bg-slate-800 text-white text-sm whitespace-nowrap">📋 Tempel</button>
+        <input id="fLink" placeholder="Tempel link Google Maps…" class="flex-1 min-w-0 border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400" oninput="clearTimeout(window.__lt);window.__lt=setTimeout(applyLink,350)">
+        <button type="button" onclick="pasteLink()" class="px-3 rounded-lg bg-purple-500 text-white text-sm whitespace-nowrap">📋 Tempel</button>
       </div>
       <p id="linkMsg" class="text-[11px] text-slate-500"></p>
       <iframe id="linkPrev" class="hidden w-full h-36 rounded-xl border-0 bg-slate-100" loading="lazy" title="Pratinjau lokasi"></iframe>
-      <input id="fCoord" placeholder="atau ketik koordinat: -6.8302, 107.6341" oninput="showPrev()" class="w-full border rounded-lg px-2 py-2 text-slate-600">
+      <input id="fCoord" placeholder="atau ketik koordinat: -6.8302, 107.6341" oninput="showPrev()" class="w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400 text-slate-600">
     </div>
     <div>
       <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Rincian Biaya</span>
-        <button type="button" onclick="addRow()" class="text-xs text-blue-600 font-semibold">＋ Biaya</button></div>
+        <button type="button" onclick="addRow()" class="text-xs text-rose-600 font-semibold">＋ Biaya</button></div>
       <div id="fItems" class="space-y-2"></div>
     </div>
     <div class="flex gap-2 pt-2">
-      <button onclick="closeM('modal')" class="flex-1 py-2.5 rounded-lg border text-sm">Batal</button>
-      <button onclick="saveStop()" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold">Simpan</button>
+      <button onclick="closeM('modal')" class="flex-1 py-2.5 rounded-xl border border-pink-200 text-slate-600 text-sm font-semibold">Batal</button>
+      <button onclick="saveStop()" class="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-200">Simpan</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL TRIP -->
 <div id="tmodal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center">
-  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-5 space-y-4">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-5 space-y-4">
     <h3 id="tTitle" class="font-bold text-lg">Pengaturan Trip</h3>
     <input type="hidden" id="tId">
-    <label class="text-xs font-medium block">Nama Trip<input id="tName" placeholder="mis. Trip Bali" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
+    <label class="text-xs font-medium block">Nama Trip<input id="tName" placeholder="mis. Trip Bali" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
     <div class="grid grid-cols-2 gap-3">
-      <label class="text-xs font-medium">Mulai<input id="tStart" type="date" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
-      <label class="text-xs font-medium">Selesai<input id="tEnd" type="date" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
+      <label class="text-xs font-medium">Mulai<input id="tStart" type="date" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
+      <label class="text-xs font-medium">Selesai<input id="tEnd" type="date" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
     </div>
-    <label class="text-xs font-medium block">Dana darurat (%)<input id="tRes" type="number" min="0" max="50" class="mt-1 w-full border rounded-lg px-2 py-2"></label>
+    <label class="text-xs font-medium block">Dana darurat (%)<input id="tRes" type="number" min="0" max="50" class="mt-1 w-full border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400"></label>
     <div>
-      <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Peserta</span><button type="button" onclick="addMem('')" class="text-xs text-blue-600 font-semibold">＋ Peserta</button></div>
+      <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Peserta</span><button type="button" onclick="addMem('')" class="text-xs text-rose-600 font-semibold">＋ Peserta</button></div>
       <div id="tMem" class="space-y-2"></div>
     </div>
     <div>
-      <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Kendaraan / Moda Transportasi</span><button type="button" onclick="addVeh({name:'',kind:'car',fuel:'Pertalite',price:10000,kmpl:10});refreshVehAll()" class="text-xs text-blue-600 font-semibold">＋ Kendaraan</button></div>
+      <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Kendaraan / Moda Transportasi</span><button type="button" onclick="addVeh({name:'',kind:'car',fuel:'Pertalite',price:10000,kmpl:10});refreshVehAll()" class="text-xs text-rose-600 font-semibold">＋ Kendaraan</button></div>
       <div id="tVeh" class="space-y-2"></div>
       <p class="text-[11px] text-slate-400 mt-1">Mobil: biaya BBM dihitung dari km ÷ km/liter × harga/liter. Umum (bus, travel, kereta): BBM = 0, isi biaya lewat "Tiket Umum".</p>
     </div>
     <div id="tApply" class="bg-slate-50 rounded-xl p-3 space-y-2">
       <span class="text-xs font-medium">Pakai satu kendaraan untuk semua kegiatan</span>
-      <div class="flex gap-2"><select id="tVehAll" class="flex-1 min-w-0 border rounded-lg px-2 py-2 bg-white"></select>
-        <button type="button" onclick="applyAll()" class="px-3 rounded-lg bg-slate-800 text-white text-sm whitespace-nowrap">Terapkan</button></div>
+      <div class="flex gap-2"><select id="tVehAll" class="flex-1 min-w-0 border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400 bg-white"></select>
+        <button type="button" onclick="applyAll()" class="px-3 rounded-lg bg-purple-500 text-white text-sm whitespace-nowrap">Terapkan</button></div>
     </div>
     <div class="flex gap-2">
       <button id="tDel" onclick="delTrip()" class="px-3 py-2.5 rounded-lg bg-red-50 text-red-600 text-sm">Hapus</button>
-      <button onclick="closeM('tmodal')" class="flex-1 py-2.5 rounded-lg border text-sm">Batal</button>
-      <button onclick="saveTrip()" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold">Simpan</button>
+      <button onclick="closeM('tmodal')" class="flex-1 py-2.5 rounded-xl border border-pink-200 text-slate-600 text-sm font-semibold">Batal</button>
+      <button onclick="saveTrip()" class="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-200">Simpan</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL DETAIL KATEGORI -->
 <div id="cmodal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center">
-  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[88vh] overflow-y-auto p-4 sm:p-5">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[88vh] overflow-y-auto p-4 sm:p-5">
     <div class="flex items-start justify-between gap-2 mb-3"><div id="cHead" class="min-w-0"></div>
       <button onclick="closeM('cmodal')" class="text-slate-400 text-xl leading-none px-1">✕</button></div>
     <div id="cBody" class="space-y-4"></div>
   </div>
 </div>
-<div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center"></div>
+<nav id="bnav" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-pink-100 pb-[env(safe-area-inset-bottom)]">
+  <div class="grid grid-cols-4 h-16 max-w-md mx-auto">
+    <button data-n="home" onclick="goHome()" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🏠</span><span class="text-[10px] font-bold">Beranda</span></button>
+    <button data-n="add" onclick="openTrip('')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">➕</span><span class="text-[10px] font-bold">Tambah Trip</span></button>
+    <button data-n="wahana" onclick="navCat('Wahana')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🎢</span><span class="text-[10px] font-bold">List Wahana</span></button>
+    <button data-n="konsumsi" onclick="navCat('Konsumsi')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🍽️</span><span class="text-[10px] font-bold">Konsumsi</span></button>
+  </div>
+</nav>
+<div id="toast" class="hidden fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-50 bg-rose-950 text-white text-sm px-4 py-2 rounded-full shadow-lg max-w-[90vw] text-center"></div>
 
 <script>
 /* ================= KONSTANTA ================= */
 const DEF_ID='t-bandung';
 const TYPES={BBM:'Transportasi',Tol:'Transportasi','Tiket Feri':'Transportasi','Tiket Umum':'Transportasi',Penginapan:'Akomodasi',HTM:'Wahana',Makan:'Konsumsi'};
 const CATS={
-  Transportasi:{ico:'🚗',card:'bg-blue-50',txt:'text-blue-700',hex:'#3b82f6'},
-  Akomodasi:{ico:'🛏️',card:'bg-violet-50',txt:'text-violet-700',hex:'#8b5cf6'},
-  Wahana:{ico:'🎢',card:'bg-green-50',txt:'text-green-700',hex:'#22c55e'},
-  Konsumsi:{ico:'🍽️',card:'bg-orange-50',txt:'text-orange-700',hex:'#f97316'}};
-const CHIP={BBM:'bg-blue-100 text-blue-700',Tol:'bg-sky-100 text-sky-700','Tiket Feri':'bg-cyan-100 text-cyan-700','Tiket Umum':'bg-indigo-100 text-indigo-700',Penginapan:'bg-violet-100 text-violet-700',HTM:'bg-green-100 text-green-700',Makan:'bg-orange-100 text-orange-700'};
+  Transportasi:{ico:'🚗',txt:'text-sky-600',ib:'bg-sky-100',bd:'border-sky-100',hex:'#38bdf8'},
+  Akomodasi:{ico:'🛏️',txt:'text-purple-600',ib:'bg-purple-100',bd:'border-purple-100',hex:'#a78bfa'},
+  Wahana:{ico:'🎢',txt:'text-emerald-600',ib:'bg-emerald-100',bd:'border-emerald-100',hex:'#34d399'},
+  Konsumsi:{ico:'🍽️',txt:'text-rose-600',ib:'bg-rose-100',bd:'border-rose-100',hex:'#fb7185'}};
+const CHIP={BBM:'bg-sky-100 text-sky-700',Tol:'bg-sky-100 text-sky-700','Tiket Feri':'bg-cyan-100 text-cyan-700','Tiket Umum':'bg-purple-100 text-purple-700',Penginapan:'bg-violet-100 text-violet-700',HTM:'bg-green-100 text-green-700',Makan:'bg-orange-100 text-orange-700'};
+// bawaan untuk trip baru (generik)
 const DEF_VEH=[
+  {name:'Mobil Pribadi',kind:'car',fuel:'Pertalite',price:10000,kmpl:12},
+  {name:'Bus / Travel',kind:'public'},{name:'Kereta / KRL',kind:'public'},{name:'Pesawat',kind:'public'},{name:'Taksi / Online',kind:'public'}];
+// hanya untuk contoh Trip Bandung
+const SAMPLE_VEH=[
   {name:'Great Corolla',kind:'car',fuel:'Pertalite',price:10000,kmpl:10},
   {name:'Pajero',kind:'car',fuel:'Pertamina Dex',price:25750,kmpl:10},
   {name:'Bus / Travel',kind:'public'},{name:'KRL / MRT',kind:'public'},{name:'Taksi / Gocar',kind:'public'}];
 const $=id=>document.getElementById(id);
 const rp=n=>'Rp '+Math.round(n||0).toLocaleString('id-ID');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const S={trips:[],stops:[],tripId:'',day:'all',map:'route',focus:null};
-const T=()=>S.trips.find(t=>t.id===S.tripId)||S.trips[0];
+const S={trips:[],stops:[],tripId:'',view:'home',day:'all',map:'route',focus:null};
+const T=()=>S.trips.find(t=>t.id===S.tripId); // hanya trip yang sedang dibuka
 const mine=()=>S.stops.filter(s=>s.tripId===T().id);
 const sorted=()=>mine().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -183,7 +220,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 /* ================= DATA CONTOH: TRIP BANDUNG ================= */
 const PINS=[[["Bandar Lampung",-5.4223,105.2582],["Bakauheni",-5.849,105.7317],["Merak",-5.9329,105.9997]],[["Rangkasbitung",-6.3527,106.2515]],[["Rangkasbitung (area pernikahan)",-6.3527,106.2515]],[["Rangkasbitung",-6.3527,106.2515],["Braci by Matoa Group",-6.9002,107.6117]],[["Braci by Matoa Group",-6.9002,107.6117]],[["Noah's Park",-6.8302,107.6341]],[["Water Coaster – Dusun Bambu",-6.7878,107.5799]],[["Nordic Land",-6.8211,107.5994]],[],[["Roti Gempol",-6.9028,107.6158]],[["Scentsored Perfumery",-6.9004,107.6136]],[["Dapoer Pandan Wangi – Patuha",-6.9284,107.6239]],[["Nyonya Manis Drinking Club",-6.9194,107.6097],["The Bond's",-6.9165,107.6089]],[["Toko Roti Merak",-6.8983,107.6205]],[["Siliwangi Bowling Center",-6.9093,107.6193]],[["Makmur Jaya – Sawunggaling",-6.9004,107.6096],["Subroto Kopi",-6.9235,107.623]],[["Nasi Pedas Mertua",-6.9068,107.6197],["Sate Asin Pedas Gofar",-6.9191,107.6234],["Gulapadi Bandung",-6.9208,107.6062]],[["Tji Laki 9",-6.9069,107.6287]],[["BMB Canteen",-6.8812,107.5961],["Rumah Makan Wangi Seruni",-6.9025,107.6237]],[["Bandung (pusat)",-6.9028,107.6158],["Merak",-5.9329,105.9997],["Bakauheni",-5.849,105.7317],["Bandar Lampung",-5.4223,105.2582]]];
 function seedTrips(){return[{id:DEF_ID,name:'Trip Bandung',start:'2026-11-06',end:'2026-11-11',reserve:10,
-  members:['Yoga','Istri','Adik Perempuan (24)','Adik Laki-laki (10)'],vehicles:clone(DEF_VEH)}];}
+  members:['Yoga','Istri','Adik Perempuan (24)','Adik Laki-laki (10)'],vehicles:clone(SAMPLE_VEH)}];}
 function seedStops(){
   let n=0; const M={p:'pax',k:'km'};
   const m=(d,time,place,note,items)=>({id:'s'+(++n),tripId:DEF_ID,date:'2026-11-'+d,time,vehicle:'Great Corolla',place,note,
@@ -258,61 +295,99 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('hidden'
 const closeM=id=>$(id).classList.add('hidden');
 
 /* ================= RENDER ================= */
+function setHash(id){try{history.pushState({},'',location.pathname+location.search+(id?'#'+id:''));}catch(e){}}
+function openTripView(id){S.tripId=id;S.view='trip';S.day='all';S.map='route';S.focus=null;setHash(id);render();window.scrollTo(0,0);}
+function goHome(){S.tripId='';S.view='home';S.focus=null;setHash('');render();window.scrollTo(0,0);}
+function countdown(t){
+  if(!t.start) return '';
+  const a=new Date(t.start+'T00:00:00'), b=new Date((t.end||t.start)+'T23:59:59'), now=new Date();
+  if(now<a) return '⏳ H-'+Math.ceil((a-now)/864e5);
+  return now<=b?'🌴 Sedang berlangsung':'✅ Selesai';
+}
+function renderHome(){
+  $('tripGrid').innerHTML=S.trips.map(t=>{
+    const st=S.stops.filter(s=>s.tripId===t.id), days=new Set(st.map(s=>s.date)).size, n=t.members.length||1;
+    const grand=st.reduce((a,s)=>a+stopTotal(s,t),0)*(1+t.reserve/100);
+    const rng=fmtS(t.start)?fmtS(t.start)+(t.end?' – '+fmtS(t.end):''):'Tanggal belum diatur', cd=countdown(t);
+    return `<button onclick="openTripView('${esc(t.id)}')" class="text-left w-full bg-white border border-pink-100 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md active:scale-[.99] transition space-y-3 min-w-0">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0"><h3 class="text-lg font-black text-rose-950 leading-snug break-words">${esc(t.name)}</h3>
+          <p class="text-xs text-slate-500 mt-0.5">${esc(rng)}${days?' ('+days+' hari)':''}</p></div>
+        ${cd?`<span class="shrink-0 text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200">${cd}</span>`:''}
+      </div>
+      <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-600">
+        <span class="px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-100">👥 ${n} orang</span>
+        <span class="px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-100">📍 ${st.length} kegiatan</span></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="rounded-2xl bg-rose-50 border border-rose-100 px-3 py-2 min-w-0"><p class="text-[10px] font-semibold text-slate-500">Estimasi Total</p><p class="text-sm font-black text-rose-700 truncate">${rp(grand)}</p></div>
+        <div class="rounded-2xl bg-teal-50 border border-teal-100 px-3 py-2 min-w-0"><p class="text-[10px] font-semibold text-slate-500">Per Orang</p><p class="text-sm font-black text-teal-700 truncate">${rp(grand/n)}</p></div></div>
+      <div class="flex justify-end"><span class="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center font-bold shadow-md shadow-pink-200">→</span></div>
+    </button>`;}).join('')+
+    `<button onclick="openTrip('')" class="min-h-[12rem] rounded-3xl border-2 border-dashed border-slate-400/50 bg-gradient-to-br from-pink-50 via-amber-50 to-teal-50 text-slate-700 hover:border-rose-400 flex flex-col items-center justify-center gap-1 p-4 text-center"><span class="text-base font-black">＋ Bikin Rencana Baru, yuk! ✨</span><span class="text-xs text-slate-500">Mau ke Bali? Jogja? Yuk kita catat!</span></button>`;
+  $('homeSample').classList.toggle('hidden',S.trips.length>0);
+}
+function setNav(trip){document.querySelectorAll('#bnav [data-n]').forEach(b=>{const on=b.dataset.n==='home'&&!trip;b.classList.toggle('text-rose-500',on);b.classList.toggle('text-slate-400',!on);});}
+function navCat(k){if(S.view!=='trip'||!T()) return toast('Buka salah satu trip dulu'); openCat(k);}
 function render(){
-  const t=T(), has=!!t;
-  $('app').classList.toggle('hidden',!has); $('welcome').classList.toggle('hidden',has);
-  $('tripSel').innerHTML=S.trips.map(x=>`<option class="text-slate-900" value="${esc(x.id)}" ${has&&x.id===t.id?'selected':''}>${esc(x.name)}</option>`).join('')+'<option class="text-slate-900" value="__new">＋ Trip baru…</option>';
-  if(!has){$('tripSub').textContent='Belum ada trip';return;}
-  S.tripId=t.id;
-  $('tripSub').textContent=[fmtS(t.start)&&fmtS(t.start)+(t.end?' – '+fmtS(t.end):''),t.members.length+' orang',API_URL?'':'mode demo'].filter(Boolean).join(' · ');
+  const t=T(), trip=S.view==='trip'&&!!t;
+  $('app').classList.toggle('hidden',!trip); $('home').classList.toggle('hidden',trip);
+  ['bBack','bSet','bAdd'].forEach(id=>$(id).classList.toggle('hidden',!trip)); $('bNew').classList.toggle('hidden',trip);
+  setNav(trip);
+  if(!trip){$('tripSub').textContent=API_URL?'Rencana & anggaran perjalanan':'mode demo';renderHome();return;}
+  const sub=[fmtS(t.start)&&fmtS(t.start)+(t.end?' – '+fmtS(t.end):''),t.members.length+' orang',API_URL?'':'mode demo'].filter(Boolean).join(' · ');
+  $('tripSub').textContent=t.name+' · '+sub; $('heroTitle').textContent=t.name; $('heroSub').textContent=sub;
 
   const tt=totals(), sum=Object.values(tt).reduce((a,b)=>a+b,0), n=t.members.length||1, grand=sum*(1+t.reserve/100);
-  let h=`<button onclick="openCat('all')" class="col-span-2 md:col-span-4 xl:col-span-1 text-left bg-slate-900 text-white rounded-2xl p-4">
-      <p class="text-xs text-slate-300">Total Biaya · ketuk untuk detail</p><p class="text-2xl font-bold mt-1">${rp(sum)}</p>
-      <p class="text-[11px] text-slate-400 mt-1">+ darurat ${t.reserve}% = ${rp(grand)}</p></button>`;
+  let h=`<button onclick="openCat('all')" class="col-span-2 text-left bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-3xl p-4 sm:p-5 shadow-lg shadow-pink-200 min-w-0">
+      <div class="flex justify-between items-center gap-2"><p class="text-[11px] font-bold text-rose-100 uppercase tracking-wider">💰 Total Biaya Trip</p><span class="shrink-0 bg-white/20 text-[10px] px-2 py-0.5 rounded-full font-bold">Detail ›</span></div>
+      <p class="text-2xl sm:text-3xl font-black mt-1.5 break-words">${rp(sum)}</p>
+      <p class="text-xs text-rose-100 mt-3 pt-2.5 border-t border-white/25 font-medium">+ darurat ${t.reserve}% = <b class="text-white">${rp(grand)}</b></p></button>`;
   for(const k in CATS){const c=CATS[k];
-    h+=`<button onclick="openCat('${k}')" class="${c.card} rounded-2xl p-3 text-left min-w-0 active:scale-95 transition">
-      <p class="text-xs ${c.txt} flex justify-between"><span>${k}</span><span>${c.ico}</span></p>
-      <p class="font-bold mt-1 ${c.txt} text-[15px] truncate">${rp(tt[k])}</p>
-      <p class="text-[11px] text-slate-500">${sum?Math.round(tt[k]/sum*100):0}% · detail ›</p></button>`;}
-  h+=`<div class="col-span-2 md:col-span-4 xl:col-span-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-      <p class="text-xs text-slate-500">Biaya per Orang</p><p class="text-2xl font-bold mt-1">${rp(grand/n)}</p>
-      <p class="text-[11px] text-slate-400 mt-1">${n} orang · inkl. darurat</p></div>`;
+    h+=`<button onclick="openCat('${k}')" class="bg-white border ${c.bd} rounded-3xl p-3.5 text-left min-w-0 shadow-sm hover:shadow-md active:scale-95 transition">
+      <div class="flex justify-between items-start gap-1"><span class="text-xs font-bold ${c.txt}">${k}</span><span class="w-8 h-8 shrink-0 rounded-xl ${c.ib} flex items-center justify-center text-sm">${c.ico}</span></div>
+      <p class="text-[15px] sm:text-lg font-black text-slate-800 mt-2 truncate">${rp(tt[k])}</p>
+      <span class="inline-block text-[11px] font-semibold ${c.txt} ${c.ib} px-2 py-0.5 rounded-full mt-1">${sum?Math.round(tt[k]/sum*100):0}% dari total</span></button>`;}
+  h+=`<div class="col-span-2 lg:col-span-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-3xl p-4 sm:p-5 flex items-center justify-between gap-3 shadow-md shadow-purple-200">
+      <div class="min-w-0"><p class="text-[11px] font-bold text-purple-100 uppercase tracking-wider">💳 Estimasi Per Orang</p><p class="text-2xl font-black mt-1 break-words">${rp(grand/n)}</p>
+      <p class="text-xs text-purple-100 mt-0.5 font-medium">Bagi ${n} orang · sudah termasuk dana darurat</p></div>
+      <span class="w-12 h-12 shrink-0 rounded-2xl bg-white/20 flex items-center justify-center text-2xl">👥</span></div>`;
   $('summary').innerHTML=h;
+  const nd=new Set(mine().map(s=>s.date)).size, ch='px-3 py-1.5 rounded-full bg-white/70 border border-white';
+  $('heroStats').innerHTML=`<span class="${ch}">📅 ${nd} hari</span><span class="${ch}">📍 ${mine().length} kegiatan</span><span class="${ch}">👥 ${n} orang</span><span class="${ch}">💰 ${rp(grand)}</span>`;
   $('bar').innerHTML=Object.keys(CATS).map(k=>`<div style="width:${sum?tt[k]/sum*100:0}%;background:${CATS[k].hex}"></div>`).join('');
 
   const days=[...new Set(mine().map(s=>s.date))].sort();
   if(S.day!=='all'&&!days.includes(S.day)) S.day='all';
-  $('tabs').innerHTML=['all',...days].map((d,i)=>`<button onclick="S.day='${d}';render()" class="shrink-0 px-3 py-1.5 rounded-full text-sm ${S.day===d?'bg-blue-600 text-white':'bg-white text-slate-600 border'}">${d==='all'?'Semua':'Hari '+i+' · '+fmtTab(d)}</button>`).join('');
+  $('tabs').innerHTML=['all',...days].map((d,i)=>`<button onclick="S.day='${d}';render()" class="shrink-0 px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition ${S.day===d?'bg-rose-500 text-white shadow-md shadow-rose-200':'bg-white text-slate-600 border border-pink-100 hover:bg-rose-50'}">${d==='all'?'Semua':'Hari '+i+' · '+fmtTab(d)}</button>`).join('');
 
   let out='',last='';
   sorted().filter(s=>S.day==='all'||s.date===S.day).forEach(s=>{
     if(s.date!==last){last=s.date;const dt=mine().filter(x=>x.date===s.date).reduce((a,x)=>a+stopTotal(x),0);
-      out+=`<div class="flex items-center justify-between gap-2 pt-1"><h3 class="font-bold text-slate-700 text-sm sm:text-base">${fmtDay(s.date)}</h3><span class="text-xs font-semibold text-slate-500 shrink-0">${rp(dt)}</span></div>`;}
-    const v=veh(s,t);
-    out+=`<article class="bg-white rounded-2xl shadow-sm p-3 sm:p-4">
+      out+=`<div class="flex items-center justify-between gap-2 pt-2"><h3 class="font-extrabold text-slate-800 text-sm sm:text-base min-w-0 break-words">${fmtDay(s.date)}</h3><span class="shrink-0 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full">${rp(dt)}</span></div>`;}
+    const v=veh(s,t), mu=stopMapUrl(s);
+    out+=`<article class="bg-white border border-pink-100 rounded-3xl shadow-sm hover:shadow-md transition p-4 sm:p-5 space-y-3 min-w-0">
       <div class="flex items-start gap-3">
-        <div class="text-sm font-bold text-blue-600 shrink-0 w-11">${esc(s.time)}</div>
+        <span class="shrink-0 text-xs font-black text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-xl font-mono">${esc(s.time)}</span>
         <div class="flex-1 min-w-0">
-          <h4 class="font-semibold leading-snug break-words">${esc(s.place)}</h4>
-          <span class="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">${v.kind==='car'?'🚗':'🚌'} ${esc(v.name)}</span>
-          ${s.note?`<p class="text-xs text-slate-500 mt-1">${esc(s.note)}</p>`:''}
-          ${(s.pins||[]).length?`<div class="flex flex-wrap gap-1 mt-1.5">${s.pins.map((p,k)=>`<button onclick="focusPin('${s.id}',${k})" class="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-left max-w-full truncate">📍 ${esc(p.n)}</button>`).join('')}</div>`:''}
-          <div class="mt-2 space-y-1.5">${(s.items||[]).map(i=>{const d=detail(i,s,t);return `<div class="flex items-start gap-2 text-xs">
-            <span class="px-2 py-0.5 rounded-md shrink-0 ${CHIP[i.type]||'bg-slate-100'}">${esc(i.type)}</span>
-            <span class="flex-1 min-w-0 text-slate-600">${esc(i.label)}${d?`<span class="block text-[10px] text-slate-400">${esc(d)}</span>`:''}</span>
-            <span class="font-medium shrink-0">${rp(cost(i,s,t))}</span></div>`}).join('')||'<p class="text-xs text-slate-400">Tanpa biaya</p>'}</div>
+          <h4 class="font-extrabold leading-snug break-words">${esc(s.place)}</h4>
+          <span class="inline-flex items-center gap-1 mt-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100 max-w-full"><span>${v.kind==='car'?'🚗':'🚌'}</span><span class="truncate">${esc(v.name)}</span></span>
+          ${s.note?`<p class="text-xs text-rose-500 mt-1 italic">${esc(s.note)}</p>`:''}
+          ${(s.pins||[]).length?`<div class="flex flex-wrap gap-1 mt-1.5">${s.pins.map((p,k)=>`<button onclick="focusPin('${s.id}',${k})" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-pink-50 border border-pink-100 text-rose-600 text-left max-w-full truncate">📍 ${esc(p.n)}</button>`).join('')}</div>`:''}
         </div>
       </div>
-      <div class="flex items-center justify-between mt-3 pt-3 border-t">
-        <span class="text-sm font-bold">${rp(stopTotal(s))}</span>
-        <div class="flex gap-2">${stopMapUrl(s)?`<a href="${esc(stopMapUrl(s))}" target="_blank" rel="noopener" class="px-3 py-1.5 text-xs rounded-lg bg-emerald-50 text-emerald-700 font-medium">🗺️ Maps</a>`:''}<button onclick="openModal('${s.id}')" class="px-3 py-1.5 text-xs rounded-lg bg-slate-100">✏️ Edit</button>
-        <button onclick="delStop('${s.id}')" class="px-3 py-1.5 text-xs rounded-lg bg-red-50 text-red-600">🗑</button></div>
+      <div class="bg-rose-50/60 border border-rose-100 rounded-2xl p-3 space-y-2">${(s.items||[]).map(i=>{const d=detail(i,s,t);return `<div class="flex items-start gap-2 text-xs">
+            <span class="px-2 py-0.5 rounded-md shrink-0 text-[10px] font-bold ${CHIP[i.type]||'bg-slate-100'}">${esc(i.type)}</span>
+            <span class="flex-1 min-w-0 text-slate-700 font-semibold break-words">${esc(i.label)}${d?`<span class="block text-[10px] font-normal text-slate-400">${esc(d)}</span>`:''}</span>
+            <span class="font-extrabold text-slate-800 shrink-0">${rp(cost(i,s,t))}</span></div>`}).join('')||'<p class="text-xs text-slate-400">Tanpa biaya</p>'}</div>
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <div><span class="text-[10px] text-slate-400 uppercase font-bold">Subtotal</span> <span class="text-sm font-black text-rose-600">${rp(stopTotal(s))}</span></div>
+        <div class="flex items-center gap-1.5">${mu?`<a href="${esc(mu)}" target="_blank" rel="noopener" class="px-3 py-1.5 text-[11px] rounded-xl bg-teal-50 text-teal-700 border border-teal-200 font-bold">🗺️ Maps</a>`:''}<button onclick="openModal('${s.id}')" class="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-100 text-slate-600">✏️ Edit</button>
+        <button onclick="delStop('${s.id}')" class="px-3 py-1.5 text-[11px] rounded-xl bg-rose-50 text-rose-600">🗑</button></div>
       </div></article>`;
   });
-  $('timeline').innerHTML=out||'<div class="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm">Belum ada kegiatan di trip ini.<br>Ketuk “＋ Tambah Kegiatan”.</div>';
+  $('timeline').innerHTML=out||'<div class="bg-white border border-pink-100 rounded-3xl p-8 text-center text-slate-500 text-sm">Belum ada kegiatan di trip ini.<br>Ketuk “＋ Tambah Kegiatan”.</div>';
 
-  const colors=['bg-blue-500','bg-pink-500','bg-emerald-500','bg-amber-500','bg-teal-500','bg-rose-500'];
+  const colors=['bg-rose-400','bg-purple-400','bg-emerald-400','bg-amber-400','bg-sky-400','bg-pink-400'];
   $('mcount').textContent=n;
   $('members').innerHTML=t.members.map((m,i)=>`<div class="flex items-center gap-2 min-w-0"><span class="w-9 h-9 rounded-full ${colors[i%6]} text-white flex items-center justify-center font-bold shrink-0">${esc((m.trim()[0]||'?').toUpperCase())}</span><span class="text-xs leading-tight break-words min-w-0">${esc(m)}</span></div>`).join('');
   $('vehs').innerHTML=t.vehicles.map(v=>{const used=mine().filter(s=>veh(s,t)===v).length;
@@ -368,12 +443,12 @@ function renderMap(){
   const ctx=ctxPoints(), u=gmUrls(S.focus?[S.focus]:ctx), f=$('gmap'), src=u.embed||'about:blank';
   if(f.dataset.src!==src){f.dataset.src=src;f.src=src;}
   $('gmLink').href=u.open||'#';
-  const on='bg-blue-600 text-white border-blue-600',off='bg-white text-slate-600';
+  const on='bg-rose-500 text-white border-rose-500',off='bg-white text-slate-600';
   $('bRoute').className='px-3 py-1.5 rounded-full border '+(S.map==='route'&&!S.focus?on:off);
   $('bDay').className='px-3 py-1.5 rounded-full border '+(S.map==='day'&&!S.focus?on:off);
-  $('pinList').innerHTML=(S.focus?`<button onclick="setMap('${S.map}')" class="text-xs text-blue-600 font-semibold">← Kembali ke rute</button>`:'')+
+  $('pinList').innerHTML=(S.focus?`<button onclick="setMap('${S.map}')" class="text-xs text-rose-600 font-semibold">← Kembali ke rute</button>`:'')+
     ctx.map((p,i)=>`<button onclick="focusCtx(${i})" class="w-full flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded-lg hover:bg-slate-50">
-      <span class="w-5 h-5 shrink-0 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold">${i+1}</span>
+      <span class="w-5 h-5 shrink-0 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold">${i+1}</span>
       <span class="flex-1 truncate">${esc(p.n)}</span></button>`).join('')||'<p class="text-xs text-slate-400">Belum ada titik lokasi. Tambahkan lewat Edit kegiatan.</p>';
 }
 function setMap(m){S.map=m;S.focus=null;if(m==='day'&&S.day==='all'){const d=sorted().find(s=>(s.pins||[]).length);if(d)S.day=d.date;}render();}
@@ -442,7 +517,7 @@ async function pasteLink(){
 }
 
 /* ================= KEGIATAN ================= */
-const inp='border rounded-lg px-2 py-2 min-w-0';
+const inp='border border-pink-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:border-rose-400 min-w-0';
 function rowHtml(i){
   return `<div class="ir border rounded-lg p-2 space-y-1.5">
     <div class="flex gap-2"><select class="r-type ${inp} flex-1" onchange="rowSync(this.closest('.ir'))">${Object.keys(TYPES).map(x=>`<option ${x===i.type?'selected':''}>${x}</option>`).join('')}</select>
@@ -497,10 +572,6 @@ async function delStop(id){
 }
 
 /* ================= TRIP ================= */
-function pickTrip(v){
-  if(v==='__new'){render();return openTrip('');}
-  S.tripId=v;S.day='all';S.map='route';S.focus=null; try{localStorage.setItem('tripcost_last',v);}catch(e){} render();
-}
 const memRow=n=>`<div class="mr flex gap-2"><input class="m-name ${inp} flex-1" placeholder="Nama peserta" value="${esc(n)}"><button type="button" onclick="this.closest('.mr').remove()" class="text-red-500 px-1">✕</button></div>`;
 const addMem=n=>$('tMem').insertAdjacentHTML('beforeend',memRow(n));
 function addVeh(v){
@@ -539,8 +610,8 @@ async function saveTrip(){
   const ren={}; vr.forEach((r,i)=>{const o=r.dataset.orig; if(o&&vehicles[i]&&vehicles[i].name!==o&&r.querySelector('.v-name').value.trim()) ren[o]=r.querySelector('.v-name').value.trim();});
   const ch=[]; S.stops.forEach(s=>{if(s.tripId===id&&ren[s.vehicle]){s.vehicle=ren[s.vehicle];ch.push(s);}});
   const i=S.trips.findIndex(x=>x.id===id); i<0?S.trips.push(trip):S.trips[i]=trip; S.tripId=id;
-  try{localStorage.setItem('tripcost_last',id);}catch(e){}
-  closeM('tmodal'); render();
+  S.view='trip';S.day='all';S.map='route';S.focus=null;setHash(id);
+  closeM('tmodal'); render(); window.scrollTo(0,0);
   await send({action:'saveTrip',trip}); if(ch.length) await send({action:'upsertMany',stops:ch}); toast('Trip tersimpan');
 }
 async function applyAll(){
@@ -550,11 +621,11 @@ async function applyAll(){
 }
 async function delTrip(){
   const t=T(); if(!t||!confirm(`Hapus trip "${t.name}" beserta semua kegiatannya?`)) return;
-  S.stops=S.stops.filter(s=>s.tripId!==t.id); S.trips=S.trips.filter(x=>x.id!==t.id); S.tripId=S.trips[0]?S.trips[0].id:'';
+  S.stops=S.stops.filter(s=>s.tripId!==t.id); S.trips=S.trips.filter(x=>x.id!==t.id); S.tripId='';S.view='home';setHash('');
   closeM('tmodal'); render(); await send({action:'deleteTrip',id:t.id}); toast('Trip dihapus');
 }
 async function seedAll(){
-  S.trips=seedTrips();S.stops=seedStops();S.tripId=DEF_ID;render();
+  S.trips=seedTrips();S.stops=seedStops();S.tripId='';S.view='home';render();
   await send({action:'seed',trips:S.trips,stops:S.stops}); toast('Contoh Trip Bandung dimuat');
 }
 
@@ -576,13 +647,16 @@ async function loadData(){
     if(!S.trips.length&&(d.stops||[]).length){S.trips=seedTrips();send({action:'saveTrip',trip:S.trips[0]});} // data lama → Trip Bandung
     const dflt=(S.trips.find(t=>t.id===DEF_ID)||S.trips[0]||{}).id;
     S.stops=(d.stops||[]).map(s=>normStop(s,dflt));
-    let last=''; try{last=localStorage.getItem('tripcost_last');}catch(e){}
-    S.tripId=S.trips.some(t=>t.id===last)?last:(S.trips[0]?S.trips[0].id:'');
+    const h=location.hash.slice(1), want=(S.view==='trip'&&S.trips.some(t=>t.id===S.tripId))?S.tripId:h;
+    if(S.trips.some(t=>t.id===want)){S.tripId=want;S.view='trip';} else {S.tripId='';S.view='home';}
     render(); toast('Data disinkronkan');
   }catch(e){render();toast('Gagal memuat: '+e.message);}
 }
 ['modal','tmodal','cmodal'].forEach(id=>$(id).addEventListener('click',e=>{if(e.target.id===id)closeM(id);}));
-loadData();
+addEventListener('popstate',()=>{const h=location.hash.slice(1);
+  if(S.trips.some(t=>t.id===h)){S.tripId=h;S.view='trip';S.day='all';S.map='route';S.focus=null;} else {S.tripId='';S.view='home';}
+  render();});
+render(); loadData();
 </script>
 </body>
 </html>
