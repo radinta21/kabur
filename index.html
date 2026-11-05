@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TripCost Planner – Lampung → Bandung</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .no-scrollbar::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+<!-- ============ CONFIG ============ -->
+<script>
+// Tempel URL Web App Google Apps Script (hasil Deploy) di sini.
+// Kosong = MODE DEMO (data disimpan di localStorage browser).
+const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXSjlaSOAcWdwcqaKqCZO-I71-uIIYBpybqEvLGWZCeq19xPA/exec';
+// (Opsional) API key Google Maps Embed API. Kosong = pakai embed Google Maps tanpa key.
+const GMAPS_KEY = '';
+</script>
+
+<header class="bg-slate-900 text-white sticky top-0 z-30">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="text-2xl">📍</div>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-bold leading-tight truncate">TripCost Planner</h1>
+      <p class="text-xs text-slate-300 truncate">Lampung → Rangkasbitung → Bandung · 6–11 Nov 2026 · 4 Orang</p>
+    </div>
+    <span id="mode" class="hidden sm:inline text-xs px-2 py-1 rounded-full bg-slate-700"></span>
+    <button onclick="loadData()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600">↻ Sinkron</button>
+    <button onclick="openModal()" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold">+ Kegiatan</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5 space-y-5">
+
+  <!-- 1. SUMMARY -->
+  <section id="summary" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></section>
+  <div id="bar" class="h-3 rounded-full overflow-hidden flex bg-slate-200"></div>
+
+  <div class="grid lg:grid-cols-3 gap-5">
+    <!-- 2. TIMELINE -->
+    <section class="lg:col-span-2 space-y-4">
+      <div id="tabs" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+      <div id="timeline" class="space-y-4"></div>
+      <button onclick="openModal()" class="w-full py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 text-sm font-medium">+ Tambah Kegiatan</button>
+    </section>
+
+    <!-- 3. SIDEBAR -->
+    <aside class="space-y-5">
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-2"><h2 class="font-semibold">Peta &amp; Rute</h2>
+          <a id="gmLink" href="#" target="_blank" rel="noopener" class="text-xs text-blue-600 font-semibold">Buka Google Maps ↗</a></div>
+        <div class="flex gap-2 mb-2 text-xs">
+          <button id="bRoute" onclick="setMap('route')" class="px-3 py-1.5 rounded-full border">Lampung → Bandung</button>
+          <button id="bDay" onclick="setMap('day')" class="px-3 py-1.5 rounded-full border">Rute hari ini</button>
+        </div>
+        <iframe id="gmap" class="w-full h-72 rounded-xl border-0 bg-slate-100" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Google Maps"></iframe>
+        <div id="pinList" class="mt-2 max-h-52 overflow-y-auto space-y-1"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <h2 class="font-semibold mb-3">Anggota (<span id="mcount">4</span> orang)</h2>
+        <div id="members" class="grid grid-cols-2 gap-3"></div>
+        <p class="text-xs text-slate-400 mt-3">Ketuk nama untuk mengubah.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <h2 class="font-semibold mb-2">Dana Darurat</h2>
+        <div class="flex items-center gap-3">
+          <input id="reserve" type="range" min="0" max="25" step="1" class="flex-1" oninput="setReserve(this.value)">
+          <span id="reserveLbl" class="text-sm font-semibold w-10 text-right"></span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div id="modal" class="hidden fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto p-5 space-y-3">
+    <h3 id="mTitle" class="font-bold text-lg">Kegiatan</h3>
+    <input type="hidden" id="fId">
+    <div class="grid grid-cols-2 gap-3">
+      <label class="text-xs font-medium">Tanggal<input id="fDate" type="date" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"></label>
+      <label class="text-xs font-medium">Jam<input id="fTime" type="time" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"></label>
+    </div>
+    <label class="text-xs font-medium block">Kendaraan
+      <select id="fVeh" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"><option>Great Corolla</option><option>Pajero</option></select></label>
+    <label class="text-xs font-medium block">Nama Lokasi / Kegiatan<input id="fPlace" placeholder="mis. Noah's Park" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"></label>
+    <label class="text-xs font-medium block">Catatan<input id="fNote" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"></label>
+    <label class="text-xs font-medium block">Koordinat lokasi (lat, lng) – salin dari Google Maps<input id="fCoord" placeholder="-6.8302, 107.6341" class="mt-1 w-full border rounded-lg px-2 py-2 text-sm"></label>
+    <div>
+      <div class="flex items-center justify-between mb-1"><span class="text-xs font-medium">Rincian Biaya (Rp)</span>
+        <button onclick="addRow()" class="text-xs text-blue-600 font-semibold">+ Biaya</button></div>
+      <div id="fItems" class="space-y-2"></div>
+    </div>
+    <div class="flex gap-2 pt-2">
+      <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg border text-sm">Batal</button>
+      <button onclick="saveStop()" class="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold">Simpan</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg"></div>
+
+<script>
+/* ================= DATA & CONSTANTS ================= */
+const TYPES = {BBM:'Transportasi', Tol:'Transportasi', 'Tiket Feri':'Transportasi', Penginapan:'Akomodasi', HTM:'Wahana', Makan:'Konsumsi'};
+const CATS = {
+  Transportasi:{ico:'🚗',card:'bg-blue-50',txt:'text-blue-700',hex:'#3b82f6'},
+  Akomodasi:{ico:'🛏️',card:'bg-violet-50',txt:'text-violet-700',hex:'#8b5cf6'},
+  Wahana:{ico:'🎢',card:'bg-green-50',txt:'text-green-700',hex:'#22c55e'},
+  Konsumsi:{ico:'🍽️',card:'bg-orange-50',txt:'text-orange-700',hex:'#f97316'}
+};
+const CHIP = {BBM:'bg-blue-100 text-blue-700',Tol:'bg-sky-100 text-sky-700','Tiket Feri':'bg-cyan-100 text-cyan-700',Penginapan:'bg-violet-100 text-violet-700',HTM:'bg-green-100 text-green-700',Makan:'bg-orange-100 text-orange-700'};
+const rp = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const S = {stops:[], members:['Yoga','Istri','Adik Perempuan (24)','Adik Laki-laki (10)'], reserve:10, day:'all', map:'route', focus:null};
+
+const PINS = [[["Bandar Lampung", -5.4223, 105.2582], ["Bakauheni", -5.849, 105.7317], ["Merak", -5.9329, 105.9997]], [["Rangkasbitung", -6.3527, 106.2515]], [["Rangkasbitung (area pernikahan)", -6.3527, 106.2515]], [["Rangkasbitung", -6.3527, 106.2515], ["Braci by Matoa Group", -6.9002, 107.6117]], [["Braci by Matoa Group", -6.9002, 107.6117]], [["Noah's Park", -6.8302, 107.6341]], [["Water Coaster – Dusun Bambu", -6.7878, 107.5799]], [["Nordic Land", -6.8211, 107.5994]], [], [["Roti Gempol", -6.9028, 107.6158]], [["Scentsored Perfumery", -6.9004, 107.6136]], [["Dapoer Pandan Wangi – Patuha", -6.9284, 107.6239]], [["Nyonya Manis Drinking Club", -6.9194, 107.6097], ["The Bond's", -6.9165, 107.6089]], [["Toko Roti Merak", -6.8983, 107.6205]], [["Siliwangi Bowling Center", -6.9093, 107.6193]], [["Makmur Jaya – Sawunggaling", -6.9004, 107.6096], ["Subroto Kopi", -6.9235, 107.623]], [["Nasi Pedas Mertua", -6.9068, 107.6197], ["Sate Asin Pedas Gofar", -6.9191, 107.6234], ["Gulapadi Bandung", -6.9208, 107.6062]], [["Tji Laki 9", -6.9069, 107.6287]], [["BMB Canteen", -6.8812, 107.5961], ["Rumah Makan Wangi Seruni", -6.9025, 107.6237]], [["Bandung (pusat)", -6.9028, 107.6158], ["Merak", -5.9329, 105.9997], ["Bakauheni", -5.849, 105.7317], ["Bandar Lampung", -5.4223, 105.2582]]];
+function seedStops(){
+  const C='Great Corolla'; let n=0;
+  const m=(date,time,place,note,items)=>({id:'s'+(++n),date:'2026-11-'+date,time,vehicle:C,place,note,items:items.map(i=>({type:i[0],label:i[1],amount:i[2]}))});
+  const L = [
+    m('06','07:00',"Bandar Lampung → Bakauheni → Merak",'Feri eksekutif Gol. IVA',[['BBM','Pertalite',400000],['Tol','Tol Bakauheni–Terbanggi/Merak',200000],['Tiket Feri','Merak–Bakauheni (berangkat)',750000]]),
+    m('06','17:00','Check-in Rangkasbitung','Istirahat sebelum acara pernikahan',[['Penginapan','Malam 1 (Rangkas)',700000],['Makan','Rest area & makan malam',300000]]),
+    m('07','08:00','Pernikahan Sahabat – Rangkasbitung','Makan ditanggung resepsi',[]),
+    m('07','13:00','Rangkasbitung → Bandung','Via Tol Jakarta',[['BBM','Pertalite',300000],['Tol','Jkt–Bandung',250000]]),
+    m('07','19:00','Braci by Matoa Group','Makan malam santai (±Rp100rb/orang)',[['Makan','Makan malam',400000],['Penginapan','Malam 2 (Bandung)',700000]]),
+    m('08','09:00',"Noah's Park & Luge Kart",'Luge Kart terintegrasi di area',[['HTM','Luge Kart 70rb × 4',280000],['BBM','Mobilitas lokal',100000]]),
+    m('08','12:00','Water Coaster – Dusun Bambu','Makan siang di area Dusun Bambu',[['HTM','HTM 40rb × 4',160000],['HTM','Water Coaster 60rb × 4',240000],['Makan','Makan siang',400000]]),
+    m('08','16:00','Nordic Land','The Green Forest Resort',[['HTM','HTM + spot foto 50rb × 4',200000]]),
+    m('08','19:00','Makan Malam Lembang / Setiabudi','',[['Makan','Makan malam',250000],['Penginapan','Malam 3',700000]]),
+    m('09','08:00','Roti Gempol','Sarapan roti bakar gandum',[['Makan','Sarapan keluarga',150000]]),
+    m('09','10:00','Scentsored Perfumery','Kelas meracik parfum',[['HTM','Kelas parfum',850000]]),
+    m('09','13:00','Dapoer Pandan Wangi','Masakan Sunda (nasi liwet, gurame)',[['Makan','Makan siang',450000]]),
+    m('09','19:00',"Braga – Nyonya Manis / The Bond's",'Nongkrong malam',[['Makan','Snack & minuman',350000],['Penginapan','Malam 4',700000]]),
+    m('10','08:00','Toko Roti Merak','Sarapan roti klasik',[['Makan','Sarapan',100000]]),
+    m('10','10:00','Siliwangi Bowling Center','1 lane 1 jam + sepatu 20rb × 4',[['HTM','Lane + sewa sepatu',330000]]),
+    m('10','14:00','Makmur Jaya Coffee / Subroto Kopi','Dirty Latte + pastry',[['Makan','4 minuman + pastry',200000]]),
+    m('10','19:00','Nasi Pedas Mertua · Sate Gofar · Gulapadi','Makan malam + donat 1 lusin',[['Makan','Nasi Pedas Mertua',240000],['Makan','Sate asin pedas',100000],['Makan','Donat Gulapadi',120000],['Penginapan','Malam 5',700000],['BBM','Mobilitas lokal',50000]]),
+    m('11','08:00','Tji Laki 9 – Toko Bolu & Kue','Tutup ±15:00',[['Makan','Sarapan kopitiam',200000]]),
+    m('11','11:30','BMB Canteen / Wangi Seruni','Bekal energi perjalanan jauh',[['Makan','Makan siang',350000]]),
+    m('11','14:00','Bandung → Merak → Bandar Lampung','Pulang',[['BBM','Pertalite',200000],['Tol','Tol Jkt–Bandung/Merak',500000],['Tiket Feri','Merak–Bakauheni (pulang)',750000],['Makan','Makan malam rest area',250000]])
+  ];
+  return L.map((s,i)=>({...s,pins:(PINS[i]||[]).map(p=>({n:p[0],lat:p[1],lng:p[2]}))}));
+}
+
+/* ================= API LAYER (Google Apps Script / mock localStorage) ================= */
+const LS='tripcost_v1';
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(LS))||null}catch(e){return null}};
+const lsSet=d=>{try{localStorage.setItem(LS,JSON.stringify(d))}catch(e){}};
+
+// GET: ambil seluruh itinerary + config dari Google Sheets
+async function apiGet(){
+  if(!API_URL){ // MODE DEMO
+    const d=lsGet(); if(d) return d;
+    const seed={stops:seedStops(),config:{members:S.members,reserve:10}}; lsSet(seed); return seed;
+  }
+  const r=await fetch(API_URL+'?action=list',{method:'GET',redirect:'follow'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json(); // {stops:[...], config:{...}}
+}
+
+// POST: action = upsert | delete | saveConfig | seed
+// Content-Type text/plain agar tidak memicu CORS preflight di Apps Script.
+async function apiPost(payload){
+  if(!API_URL){
+    const d=lsGet()||{stops:[],config:{}};
+    if(payload.action==='upsert'){const i=d.stops.findIndex(x=>x.id===payload.stop.id); i<0?d.stops.push(payload.stop):d.stops[i]=payload.stop;}
+    if(payload.action==='delete') d.stops=d.stops.filter(x=>x.id!==payload.id);
+    if(payload.action==='saveConfig') d.config=payload.config;
+    if(payload.action==='seed') d.stops=payload.stops;
+    lsSet(d); return {ok:true};
+  }
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),redirect:'follow'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+/* ================= LOGIC ================= */
+const stopTotal = s => (s.items||[]).reduce((a,i)=>a+(+i.amount||0),0);
+function totals(list=S.stops){
+  const t={Transportasi:0,Akomodasi:0,Wahana:0,Konsumsi:0};
+  list.forEach(s=>(s.items||[]).forEach(i=>{const c=TYPES[i.type]||'Konsumsi'; t[c]+=+i.amount||0;}));
+  return t;
+}
+const sorted = () => [...S.stops].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+const fmtDay = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+const fmtTab = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2500);}
+
+/* ================= RENDER ================= */
+function render(){
+  const t=totals(), sum=Object.values(t).reduce((a,b)=>a+b,0), n=S.members.length||1;
+  const res=sum*S.reserve/100, grand=sum+res;
+  let h=`<div class="col-span-2 md:col-span-3 xl:col-span-1 bg-slate-900 text-white rounded-2xl p-4">
+      <p class="text-xs text-slate-300">Total Biaya</p><p class="text-xl font-bold mt-1">${rp(sum)}</p>
+      <p class="text-[11px] text-slate-400 mt-1">+ darurat ${S.reserve}% = ${rp(grand)}</p></div>`;
+  for(const k in CATS){const c=CATS[k];
+    h+=`<div class="${c.card} rounded-2xl p-4"><p class="text-xs ${c.txt} flex justify-between"><span>${k}</span><span>${c.ico}</span></p>
+        <p class="font-bold mt-1 ${c.txt}">${rp(t[k])}</p><p class="text-[11px] text-slate-500">${sum?Math.round(t[k]/sum*100):0}%</p></div>`;}
+  h+=`<div class="col-span-2 md:col-span-3 xl:col-span-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <p class="text-xs text-slate-500">Biaya per Orang</p><p class="text-xl font-bold mt-1">${rp(grand/n)}</p>
+      <p class="text-[11px] text-slate-400 mt-1">untuk ${n} orang · inkl. darurat</p></div>`;
+  document.getElementById('summary').innerHTML=h;
+  document.getElementById('bar').innerHTML=Object.keys(CATS).map(k=>`<div style="width:${sum?t[k]/sum*100:0}%;background:${CATS[k].hex}" title="${k}"></div>`).join('');
+
+  // tabs
+  const days=[...new Set(S.stops.map(s=>s.date))].sort();
+  if(S.day!=='all'&&!days.includes(S.day)) S.day='all';
+  document.getElementById('tabs').innerHTML=['all',...days].map((d,i)=>`<button onclick="S.day='${d}';render()" class="shrink-0 px-3 py-1.5 rounded-full text-sm ${S.day===d?'bg-blue-600 text-white':'bg-white text-slate-600 border'}">${d==='all'?'Semua':'Hari '+i+' · '+fmtTab(d)}</button>`).join('');
+
+  // timeline
+  const list=sorted().filter(s=>S.day==='all'||s.date===S.day);
+  let out='', last='';
+  list.forEach(s=>{
+    if(s.date!==last){last=s.date; const dt=stopsOf(s.date).reduce((a,x)=>a+stopTotal(x),0);
+      out+=`<div class="flex items-center justify-between pt-2"><h3 class="font-bold text-slate-700">${fmtDay(s.date)}</h3><span class="text-xs font-semibold text-slate-500">${rp(dt)}</span></div>`;}
+    out+=`<article class="bg-white rounded-2xl shadow-sm p-4">
+      <div class="flex items-start gap-3">
+        <div class="text-center shrink-0"><div class="text-sm font-bold text-blue-600">${esc(s.time)}</div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2"><h4 class="font-semibold">${esc(s.place)}</h4>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">${s.vehicle==='Pajero'?'🛻':'🚗'} ${esc(s.vehicle)}</span></div>
+          ${s.note?`<p class="text-xs text-slate-500 mt-0.5">${esc(s.note)}</p>`:''}
+          ${(s.pins||[]).length?`<div class="flex flex-wrap gap-1 mt-1.5">${s.pins.map((p,k)=>`<button onclick="focusPin('${s.id}',${k})" class="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-left">📍 ${esc(p.n)} · ${(+p.lat).toFixed(4)}, ${(+p.lng).toFixed(4)}</button>`).join('')}</div>`:''}
+          <div class="mt-2 space-y-1">${(s.items||[]).map(i=>`<div class="flex items-center gap-2 text-xs">
+              <span class="px-2 py-0.5 rounded-md ${CHIP[i.type]||'bg-slate-100'}">${esc(i.type)}</span>
+              <span class="flex-1 text-slate-600 truncate">${esc(i.label)}</span><span class="font-medium">${rp(i.amount)}</span></div>`).join('')||'<p class="text-xs text-slate-400">Tanpa biaya</p>'}</div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t">
+        <span class="text-sm font-bold">${rp(stopTotal(s))}</span>
+        <div class="flex gap-2"><button onclick="openModal('${s.id}')" class="px-3 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200">✏️ Edit</button>
+        <button onclick="delStop('${s.id}')" class="px-3 py-1 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100">🗑</button></div>
+      </div></article>`;
+  });
+  if(!out) out=`<div class="bg-white rounded-2xl p-8 text-center text-slate-500 text-sm">Belum ada kegiatan.<br><button onclick="seedData()" class="mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Muat data itinerary 6–11 Nov</button></div>`;
+  document.getElementById('timeline').innerHTML=out;
+
+  // sidebar
+  document.getElementById('mcount').textContent=n;
+  const colors=['bg-blue-500','bg-pink-500','bg-emerald-500','bg-amber-500'];
+  document.getElementById('members').innerHTML=S.members.map((m,i)=>`<button onclick="renameMember(${i})" class="flex items-center gap-2 text-left">
+     <span class="w-10 h-10 rounded-full ${colors[i%4]} text-white flex items-center justify-center font-bold shrink-0">${esc(m.trim()[0]||'?').toUpperCase()}</span>
+     <span class="text-xs leading-tight">${esc(m)}</span></button>`).join('');
+  document.getElementById('reserve').value=S.reserve;
+  document.getElementById('reserveLbl').textContent=S.reserve+'%';
+  renderMap();
+}
+const stopsOf = d => S.stops.filter(s=>s.date===d);
+
+/* ================= GOOGLE MAPS ================= */
+const ROUTE=[{n:'Bandar Lampung',lat:-5.4223,lng:105.2582},{n:'Bakauheni',lat:-5.8490,lng:105.7317},{n:'Merak',lat:-5.9329,lng:105.9997},{n:'Rangkasbitung',lat:-6.3527,lng:106.2515},{n:'Bandung',lat:-6.9028,lng:107.6158}];
+const ll=p=>(+p.lat).toFixed(6)+','+(+p.lng).toFixed(6);
+function ctxPoints(){
+  if(S.map!=='day'||S.day==='all') return ROUTE;
+  const pts=sorted().filter(s=>s.date===S.day).flatMap(s=>s.pins||[]).filter(p=>isFinite(p.lat)&&isFinite(p.lng)&&p.lat!==''&&p.lng!=='');
+  return pts.filter((p,i)=>!i||ll(p)!==ll(pts[i-1]));
+}
+function gmUrls(pts){
+  if(!pts.length) return {embed:'',open:''};
+  if(pts.length===1){const p=pts[0];
+    return {embed:GMAPS_KEY?`https://www.google.com/maps/embed/v1/place?key=${GMAPS_KEY}&q=${ll(p)}&zoom=16`:`https://maps.google.com/maps?q=${ll(p)}&z=16&output=embed`,
+            open:`https://www.google.com/maps/search/?api=1&query=${ll(p)}`};}
+  const o=pts[0], d=pts[pts.length-1], w=pts.slice(1,-1);
+  const embed=GMAPS_KEY?`https://www.google.com/maps/embed/v1/directions?key=${GMAPS_KEY}&origin=${ll(o)}&destination=${ll(d)}${w.length?'&waypoints='+w.map(ll).join('|'):''}&mode=driving`
+    :`https://maps.google.com/maps?saddr=${ll(o)}&daddr=${[...w,d].map(ll).join('+to:')}&output=embed`;
+  const open=`https://www.google.com/maps/dir/?api=1&origin=${ll(o)}&destination=${ll(d)}${w.length?'&waypoints='+w.map(ll).join('%7C'):''}&travelmode=driving`;
+  return {embed,open};
+}
+function renderMap(){
+  const ctx=ctxPoints(), u=gmUrls(S.focus?[S.focus]:ctx), f=document.getElementById('gmap');
+  if(f.dataset.src!==u.embed){f.dataset.src=u.embed;f.src=u.embed;}
+  gmLink.href=u.open||'#';
+  const on='bg-blue-600 text-white border-blue-600', off='bg-white text-slate-600';
+  bRoute.className='px-3 py-1.5 rounded-full border '+(S.map==='route'&&!S.focus?on:off);
+  bDay.className='px-3 py-1.5 rounded-full border '+(S.map==='day'&&!S.focus?on:off);
+  pinList.innerHTML=(S.focus?`<button onclick="setMap('${S.map}')" class="text-xs text-blue-600 font-semibold">← Kembali ke rute</button>`:'')+
+    ctx.map((p,i)=>`<button onclick="focusCtx(${i})" class="w-full flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded-lg hover:bg-slate-50">
+      <span class="w-5 h-5 shrink-0 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold">${i+1}</span>
+      <span class="flex-1 truncate">${esc(p.n)}</span><span class="text-slate-400">${(+p.lat).toFixed(4)}, ${(+p.lng).toFixed(4)}</span></button>`).join('')||'<p class="text-xs text-slate-400">Belum ada koordinat untuk hari ini.</p>';
+}
+function setMap(m){
+  S.map=m; S.focus=null;
+  if(m==='day'&&S.day==='all'){const d=sorted().find(s=>(s.pins||[]).length); if(d) S.day=d.date;}
+  render();
+}
+function focusCtx(i){S.focus=ctxPoints()[i]; renderMap(); gmap.scrollIntoView({behavior:'smooth',block:'center'});}
+function focusPin(id,k){const s=S.stops.find(x=>x.id===id); if(!s||!s.pins[k]) return; S.focus=s.pins[k]; renderMap(); gmap.scrollIntoView({behavior:'smooth',block:'center'});}
+
+/* ================= ACTIONS ================= */
+async function loadData(){
+  document.getElementById('mode').textContent=API_URL?'● Google Sheets':'○ Mode Demo (lokal)';
+  try{
+    const d=await apiGet();
+    S.stops=(d.stops||[]).map(s=>({...s,items:Array.isArray(s.items)?s.items:[],pins:Array.isArray(s.pins)?s.pins:[]}));
+    if(d.config&&d.config.members&&d.config.members.length) S.members=d.config.members;
+    if(d.config&&d.config.reserve!==undefined) S.reserve=+d.config.reserve;
+    render(); toast('Data disinkronkan');
+  }catch(e){render(); toast('Gagal memuat: '+e.message);}
+}
+async function seedData(){
+  S.stops=seedStops(); render();
+  try{await apiPost({action:'seed',stops:S.stops}); toast('Data contoh tersimpan');}catch(e){toast('Gagal simpan: '+e.message);}
+}
+const saveConfig=()=>apiPost({action:'saveConfig',config:{members:S.members,reserve:S.reserve}}).catch(e=>toast('Gagal simpan: '+e.message));
+function setReserve(v){S.reserve=+v;render();clearTimeout(setReserve.t);setReserve.t=setTimeout(saveConfig,600);}
+function renameMember(i){const v=prompt('Nama anggota:',S.members[i]); if(v&&v.trim()){S.members[i]=v.trim();render();saveConfig();}}
+
+async function delStop(id){
+  if(!confirm('Hapus kegiatan ini?')) return;
+  S.stops=S.stops.filter(s=>s.id!==id); render();
+  try{await apiPost({action:'delete',id}); toast('Terhapus');}catch(e){toast('Gagal hapus: '+e.message);}
+}
+
+/* modal */
+function rowHtml(i={type:'Makan',label:'',amount:''}){
+  return `<div class="flex gap-2 items-center"><select class="r-type border rounded-lg px-1 py-2 text-xs w-28">${Object.keys(TYPES).map(t=>`<option ${t===i.type?'selected':''}>${t}</option>`).join('')}</select>
+  <input class="r-label border rounded-lg px-2 py-2 text-xs flex-1 min-w-0" placeholder="Keterangan" value="${esc(i.label)}">
+  <input class="r-amt border rounded-lg px-2 py-2 text-xs w-24" type="number" inputmode="numeric" placeholder="0" value="${i.amount}">
+  <button onclick="this.parentNode.remove()" class="text-red-500 px-1">✕</button></div>`;
+}
+function addRow(i){document.getElementById('fItems').insertAdjacentHTML('beforeend',rowHtml(i));}
+function openModal(id){
+  const s=id?S.stops.find(x=>x.id===id):{id:'',date:S.day!=='all'?S.day:'2026-11-06',time:'09:00',vehicle:'Great Corolla',place:'',note:'',items:[],pins:[]};
+  document.getElementById('mTitle').textContent=id?'Edit Kegiatan':'Tambah Kegiatan';
+  fId.value=s.id; fDate.value=s.date; fTime.value=s.time; fVeh.value=s.vehicle; fPlace.value=s.place; fNote.value=s.note||''; fCoord.value=s.pins&&s.pins[0]?s.pins[0].lat+', '+s.pins[0].lng:'';
+  fItems.innerHTML=''; (s.items.length?s.items:[undefined]).forEach(i=>addRow(i));
+  modal.classList.remove('hidden');
+}
+function closeModal(){modal.classList.add('hidden');}
+async function saveStop(){
+  if(!fPlace.value.trim()||!fDate.value) return toast('Isi tanggal & nama lokasi');
+  const items=[...fItems.children].map(r=>({type:r.querySelector('.r-type').value,label:r.querySelector('.r-label').value.trim(),amount:+r.querySelector('.r-amt').value||0})).filter(i=>i.amount||i.label);
+  const old=S.stops.find(x=>x.id===fId.value), keep=(old&&old.pins)||[];
+  const c=fCoord.value.split(/[,;\s]+/).filter(Boolean).map(Number);
+  const pins=(c.length>=2&&c.every(isFinite))?[{n:fPlace.value.trim(),lat:c[0],lng:c[1]},...keep.slice(1)]:keep;
+  const stop={id:fId.value||'s'+Date.now(),date:fDate.value,time:fTime.value||'00:00',vehicle:fVeh.value,place:fPlace.value.trim(),note:fNote.value.trim(),items,pins};
+  const i=S.stops.findIndex(x=>x.id===stop.id); i<0?S.stops.push(stop):S.stops[i]=stop;
+  closeModal(); render();
+  try{await apiPost({action:'upsert',stop}); toast('Tersimpan');}catch(e){toast('Gagal simpan: '+e.message);}
+}
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+
+loadData();
+</script>
+</body>
+</html>
