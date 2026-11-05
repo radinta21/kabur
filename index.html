@@ -306,7 +306,7 @@ function render(){
       </div>
       <div class="flex items-center justify-between mt-3 pt-3 border-t">
         <span class="text-sm font-bold">${rp(stopTotal(s))}</span>
-        <div class="flex gap-2"><button onclick="openModal('${s.id}')" class="px-3 py-1.5 text-xs rounded-lg bg-slate-100">✏️ Edit</button>
+        <div class="flex gap-2">${stopMapUrl(s)?`<a href="${esc(stopMapUrl(s))}" target="_blank" rel="noopener" class="px-3 py-1.5 text-xs rounded-lg bg-emerald-50 text-emerald-700 font-medium">🗺️ Maps</a>`:''}<button onclick="openModal('${s.id}')" class="px-3 py-1.5 text-xs rounded-lg bg-slate-100">✏️ Edit</button>
         <button onclick="delStop('${s.id}')" class="px-3 py-1.5 text-xs rounded-lg bg-red-50 text-red-600">🗑</button></div>
       </div></article>`;
   });
@@ -357,6 +357,13 @@ function gmUrls(pts){
   return {embed:`https://maps.google.com/maps?saddr=${ll(o)}&daddr=${[...w,d].map(ll).join('+to:')}&output=embed`,
     open:`https://www.google.com/maps/dir/?api=1&origin=${ll(o)}&destination=${ll(d)}${w.length?'&waypoints='+w.map(ll).join('%7C'):''}&travelmode=driving`};
 }
+function stopMapUrl(s){
+  const ps=s.pins||[], ok=ps.filter(okPin);
+  if(ok.length>1) return gmUrls(ok).open;
+  if(ps[0]&&ps[0].url) return ps[0].url;
+  if(ok.length===1) return gmUrls(ok).open;
+  return '';
+}
 function renderMap(){
   const ctx=ctxPoints(), u=gmUrls(S.focus?[S.focus]:ctx), f=$('gmap'), src=u.embed||'about:blank';
   if(f.dataset.src!==src){f.dataset.src=src;f.src=src;}
@@ -377,7 +384,8 @@ function focusPin(id,k){const s=S.stops.find(x=>x.id===id);if(!s||!s.pins[k])ret
 const LINK_HINT='Cara: buka tempat di Google Maps → Bagikan → Salin link → tempel di sini.';
 function parseMapsUrl(u){
   const n='(-?\\d{1,3}\\.\\d+)';
-  const m=u.match(new RegExp('!3d'+n+'!4d'+n))||u.match(new RegExp('@'+n+','+n))||u.match(new RegExp('[?&](?:q|ll|query|destination)='+n+'(?:,|%2C)'+n));
+  let d=u; try{d=decodeURIComponent(u);}catch(e){}
+  const m=d.match(new RegExp('!3d'+n+'!4d'+n))||d.match(new RegExp('@'+n+','+n))||d.match(new RegExp('[?&](?:q|ll|query|destination|center|daddr)='+n+'(?:,|%2C|\\+)\\s*'+n))||d.match(new RegExp('/(?:place|search|dir)/'+n+',\\s*'+n));
   if(!m) return null;
   const nm=u.match(/\/maps\/place\/([^/@?]+)/); let name='';
   if(nm){try{name=decodeURIComponent(nm[1].replace(/\+/g,' '));}catch(e){}}
@@ -396,11 +404,16 @@ async function applyLink(){
     const url=(v.match(/https?:\/\/\S+/)||[])[0];
     if(!url){$('linkMsg').textContent='Itu bukan link. '+LINK_HINT;return;}
     r=parseMapsUrl(url);
+    $('fLink').dataset.url=url;
+    let why='';
     if(!r&&API_URL){$('linkMsg').textContent='Membaca link…';
-      try{const d=await (await fetch(API_URL+'?action=resolve&url='+encodeURIComponent(url))).json(); if(d.url) r=parseMapsUrl(d.url);}catch(e){}}
+      try{const d=await (await fetch(API_URL+'?action=resolve&url='+encodeURIComponent(url),{redirect:'follow'})).json();
+        if(d.ok===false) why='Server belum diperbarui (Deploy ulang Code.gs sebagai versi baru).';
+        else if(d.url) r=parseMapsUrl(d.url);}catch(e){why='Gagal menghubungi server.';}}
     if(r&&!r.name){const first=v.split(/\r?\n/)[0].trim(); if(first&&!/^https?:/.test(first)) r.name=first;}
+    if(!r){$('linkMsg').textContent='⚠️ Koordinat belum terbaca, tapi link tetap disimpan & bisa dibuka lewat tombol 🗺️ Maps. '+why+' Atau ketik koordinat manual di bawah.';return;}
   }
-  if(!r){$('linkMsg').textContent=API_URL?'Titik tidak terbaca. Pakai link dari tombol Bagikan sebuah tempat.':'Link pendek butuh API_URL. Pakai link panjang dari browser.';return;}
+  if(!r){$('linkMsg').textContent='Koordinat tidak terbaca.';return;}
   $('fCoord').value=r.lat.toFixed(6)+', '+r.lng.toFixed(6); $('fCoord').dataset.cleared='';
   if(r.name&&!$('fPlace').value.trim()) $('fPlace').value=r.name;
   $('linkMsg').textContent='✅ Titik terisi'+(r.name?': '+r.name:'')+' ('+r.lat.toFixed(5)+', '+r.lng.toFixed(5)+')'; showPrev();
@@ -442,7 +455,7 @@ function openModal(id){
   $('fVeh').innerHTML=t.vehicles.map(v=>`<option ${v.name===s.vehicle?'selected':''}>${esc(v.name)}</option>`).join('');
   $('fId').value=s.id;$('fDate').value=s.date;$('fTime').value=s.time;$('fPlace').value=s.place;$('fNote').value=s.note||'';
   $('fCoord').value=s.pins&&s.pins[0]?s.pins[0].lat+', '+s.pins[0].lng:''; $('fCoord').dataset.cleared='';
-  $('fLink').value='';$('linkMsg').textContent=LINK_HINT;showPrev();
+  $('fLink').value=(s.pins&&s.pins[0]&&s.pins[0].url)||'';$('fLink').dataset.url=$('fLink').value;$('linkMsg').textContent=LINK_HINT;showPrev();
   $('fItems').innerHTML=''; (s.items.length?s.items:[undefined]).forEach(i=>addRow(i));
   $('modal').classList.remove('hidden');
 }
@@ -451,7 +464,12 @@ async function saveStop(){
   const items=[...$('fItems').children].map(r=>({type:r.querySelector('.r-type').value,label:r.querySelector('.r-label').value.trim(),amount:+r.querySelector('.r-amt').value||0,mode:r.querySelector('.r-mode').value})).filter(i=>i.amount||i.label);
   const old=S.stops.find(x=>x.id===$('fId').value), keep=(old&&old.pins)||[];
   const c=$('fCoord').value.split(/[,;\s]+/).filter(Boolean).map(Number);
-  const pins=(c.length>=2&&c.every(isFinite))?[{n:$('fPlace').value.trim(),lat:c[0],lng:c[1]},...keep.slice(1)]:keep;
+  const lk=(($('fLink').value.match(/https?:\/\/\S+/)||[])[0])||'';
+  const hasC=c.length>=2&&c.every(isFinite);
+  let pins;
+  if(hasC){pins=[{n:$('fPlace').value.trim(),lat:c[0],lng:c[1]},...keep.slice(1)]; if(lk) pins[0].url=lk; else if(keep[0]&&keep[0].url&&!$('fLink').value) {}}
+  else if(lk){pins=[{n:$('fPlace').value.trim(),lat:'',lng:'',url:lk},...keep.slice(1)];}
+  else pins=keep;
   const stop={id:$('fId').value||'s'+Date.now(),tripId:T().id,date:$('fDate').value,time:$('fTime').value||'00:00',vehicle:$('fVeh').value,place:$('fPlace').value.trim(),note:$('fNote').value.trim(),items,pins};
   const i=S.stops.findIndex(x=>x.id===stop.id); i<0?S.stops.push(stop):S.stops[i]=stop;
   closeM('modal'); render(); await send({action:'upsert',stop}); toast('Tersimpan');
