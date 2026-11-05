@@ -406,10 +406,27 @@ async function applyLink(){
     r=parseMapsUrl(url);
     $('fLink').dataset.url=url;
     let why='';
-    if(!r&&API_URL){$('linkMsg').textContent='Membaca link…';
-      try{const d=await (await fetch(API_URL+'?action=resolve&url='+encodeURIComponent(url),{redirect:'follow'})).json();
-        if(d.ok===false) why='Server belum diperbarui (Deploy ulang Code.gs sebagai versi baru).';
-        else if(d.url) r=parseMapsUrl(d.url);}catch(e){why='Gagal menghubungi server.';}}
+    if(!r){$('linkMsg').textContent='Membaca link…';
+      // 1) lewat Apps Script
+      if(API_URL){
+        try{const d=await (await fetch(API_URL+'?action=resolve&url='+encodeURIComponent(url),{redirect:'follow'})).json();
+          if(d.ok===false) why='Server: '+(d.error==='Unknown action'?'deploy lama (belum ada fitur baca link)':d.error)+'. ';
+          else if(d.url) r=parseMapsUrl(d.url);
+          if(!r&&d.ok!==false) why='Server tidak menemukan koordinat (URL akhir: '+String(d.url||'').slice(0,60)+'…). ';
+        }catch(e){why='Server tidak terjangkau. ';}
+      }
+      // 2) cadangan: layanan proxy publik yang mengikuti redirect
+      if(!r){
+        try{
+          const c=new AbortController(); setTimeout(()=>c.abort(),9000);
+          const d=await (await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url),{signal:c.signal})).json();
+          const fin=(d.status&&d.status.url)||'';
+          r=parseMapsUrl(fin)||parseMapsUrl(d.contents||'');
+          if(!r&&d.contents){const m=String(d.contents).match(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/)||String(d.contents).match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/); if(m) r={lat:+m[1],lng:+m[2],name:''};}
+          if(r&&!r.name&&fin){const nm=fin.match(/\/maps\/place\/([^/@?]+)/); if(nm){try{r.name=decodeURIComponent(nm[1].replace(/\+/g,' '));}catch(e){}}}
+        }catch(e){}
+      }
+    }
     if(r&&!r.name){const first=v.split(/\r?\n/)[0].trim(); if(first&&!/^https?:/.test(first)) r.name=first;}
     if(!r){$('linkMsg').textContent='⚠️ Koordinat belum terbaca, tapi link tetap disimpan & bisa dibuka lewat tombol 🗺️ Maps. '+why+' Atau ketik koordinat manual di bawah.';return;}
   }
