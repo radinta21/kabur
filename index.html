@@ -42,12 +42,12 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXS
   <div id="home" class="space-y-5">
     <div class="space-y-1">
       <h1 class="text-xl sm:text-3xl font-black text-rose-950 leading-tight">Mau Liburan ke Mana Kita? ✈️</h1>
-      <p class="text-sm text-slate-600 max-w-2xl">Yuk, catat ide jalan-jalan, hitung estimasi biaya, dan susun rutenya </p>
+      <p class="text-sm text-slate-600 max-w-2xl">Yuk, catat ide jalan-jalan, hitung estimasi biaya, dan susun rutenya</p>
     </div>
     <div class="rounded-3xl border border-white/70 shadow-sm bg-gradient-to-br from-pink-200 via-rose-100 to-purple-200 p-5 sm:p-8 flex items-center gap-4">
       <div class="flex-1 min-w-0">
         <span class="inline-block -rotate-2 bg-white shadow-sm rounded-lg px-2.5 py-1 text-[11px] font-extrabold text-rose-600">Adventure is calling!</span>
-        <h2 class="text-xl sm:text-3xl font-black text-rose-950 leading-tight mt-2">MARKIBRENGG!!!</p>
+        <h2 class="text-xl sm:text-3xl font-black text-rose-950 leading-tight mt-2">MARKIBRENGG!!!</h2>
         <button onclick="openTrip('')" class="hidden sm:inline-flex mt-4 items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold shadow-md shadow-pink-300">＋ Tambah Rencana Baru</button>
       </div>
       <div class="shrink-0 text-5xl sm:text-7xl leading-none select-none" aria-hidden="true">🧳</div>
@@ -181,7 +181,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwjDO877TqOK0MbI4N4ewXS
 <nav id="bnav" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-pink-100 pb-[env(safe-area-inset-bottom)]">
   <div class="grid grid-cols-4 h-16 max-w-md mx-auto">
     <button data-n="home" onclick="goHome()" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🏠</span><span class="text-[10px] font-bold">Beranda</span></button>
-    <button data-n="add" onclick="openTrip('')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">➕</span><span class="text-[10px] font-bold">Tambah Trip</span></button>
+    <button data-n="add" onclick="navAdd()" class="flex flex-col items-center justify-center gap-0.5 text-slate-400 px-0.5"><span class="text-xl leading-none">➕</span><span class="text-[10px] font-bold leading-tight text-center">Tambah Kegiatan</span></button>
     <button data-n="wahana" onclick="navCat('Wahana')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🎢</span><span class="text-[10px] font-bold">List Wahana</span></button>
     <button data-n="konsumsi" onclick="navCat('Konsumsi')" class="flex flex-col items-center justify-center gap-0.5 text-slate-400"><span class="text-xl leading-none">🍽️</span><span class="text-[10px] font-bold">Konsumsi</span></button>
   </div>
@@ -326,6 +326,7 @@ function renderHome(){
   $('homeSample').classList.toggle('hidden',S.trips.length>0);
 }
 function setNav(trip){document.querySelectorAll('#bnav [data-n]').forEach(b=>{const on=b.dataset.n==='home'&&!trip;b.classList.toggle('text-rose-500',on);b.classList.toggle('text-slate-400',!on);});}
+function navAdd(){if(S.view!=='trip'||!T()) return toast('Buka salah satu trip dulu'); openModal();}
 function navCat(k){if(S.view!=='trip'||!T()) return toast('Buka salah satu trip dulu'); openCat(k);}
 function render(){
   const t=T(), trip=S.view==='trip'&&!!t;
@@ -364,7 +365,7 @@ function render(){
     if(s.date!==last){last=s.date;const dt=mine().filter(x=>x.date===s.date).reduce((a,x)=>a+stopTotal(x),0);
       out+=`<div class="flex items-center justify-between gap-2 pt-2"><h3 class="font-extrabold text-slate-800 text-sm sm:text-base min-w-0 break-words">${fmtDay(s.date)}</h3><span class="shrink-0 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full">${rp(dt)}</span></div>`;}
     const v=veh(s,t), mu=stopMapUrl(s);
-    out+=`<article class="bg-white border border-pink-100 rounded-3xl shadow-sm hover:shadow-md transition p-4 sm:p-5 space-y-3 min-w-0">
+    out+=`<article id="st-${s.id}" class="bg-white border border-pink-100 rounded-3xl shadow-sm hover:shadow-md transition p-4 sm:p-5 space-y-3 min-w-0">
       <div class="flex items-start gap-3">
         <span class="shrink-0 text-xs font-black text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-xl font-mono">${esc(s.time)}</span>
         <div class="flex-1 min-w-0">
@@ -397,6 +398,26 @@ function render(){
 }
 
 /* ================= DETAIL KATEGORI ================= */
+function catRow(r,t){
+  const d=detail(r.i,r.s,t), id='cp'+(++catRow.n), ps=(r.s.pins||[]).filter(okPin), mu=stopMapUrl(r.s);
+  const emb=ps[0]?`https://maps.google.com/maps?q=${encodeURIComponent(ps[0].n||'')}&ll=${ll(ps[0])}&z=17&output=embed`:'';
+  return `<div class="border-b"><button type="button" onclick="togCp('${id}')" class="w-full flex items-center gap-2 text-xs py-2 text-left">
+      <div class="flex-1 min-w-0"><p class="truncate font-semibold">${esc(r.i.label)} <span class="font-normal text-slate-400">· ${esc(r.s.place)}</span></p>
+        <p class="text-[10px] text-slate-400">${fmtTab(r.s.date)} ${esc(r.s.time)}${d?' · '+esc(d):''}</p></div>
+      <span class="font-bold shrink-0">${rp(r.c)}</span><span class="text-rose-400 shrink-0">▾</span></button>
+    <div id="${id}" class="hidden pb-3 space-y-2">
+      ${emb?`<iframe data-src="${esc(emb)}" class="w-full h-44 rounded-2xl border-0 bg-slate-100" title="Lokasi"></iframe>`:'<p class="text-[11px] text-slate-400">Belum ada titik lokasi untuk kegiatan ini. Tambahkan lewat Edit kegiatan.</p>'}
+      <div class="flex flex-wrap gap-2">${mu?`<a href="${esc(mu)}" target="_blank" rel="noopener" class="px-3 py-1.5 text-[11px] rounded-xl bg-teal-50 text-teal-700 border border-teal-200 font-bold">🗺️ Buka di Google Maps</a>`:''}
+        <button type="button" onclick="goStop('${esc(r.s.id)}')" class="px-3 py-1.5 text-[11px] rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-bold">📋 Lihat di kegiatan</button></div>
+    </div></div>`;
+}
+catRow.n=0;
+function togCp(id){const el=$(id); el.classList.toggle('hidden'); const f=el.querySelector('iframe'); if(f&&!f.getAttribute('src')&&!el.classList.contains('hidden')) f.src=f.dataset.src;}
+function goStop(id){
+  const s=S.stops.find(x=>x.id===id); if(!s) return;
+  closeM('cmodal'); S.day=s.date; S.focus=null; render();
+  setTimeout(()=>{const a=$('st-'+id); if(a){a.scrollIntoView({behavior:'smooth',block:'center'}); a.classList.add('ring-4','ring-rose-300'); setTimeout(()=>a.classList.remove('ring-4','ring-rose-300'),2200);}},80);
+}
 function openCat(k){
   const t=T(), n=t.members.length||1, all=k==='all', tt=totals(), sum=Object.values(tt).reduce((a,b)=>a+b,0);
   const rows=[]; sorted().forEach(s=>s.items.forEach(i=>{if(all||TYPES[i.type]===k) rows.push({s,i,c:cost(i,s,t)});}));
@@ -410,8 +431,7 @@ function openCat(k){
     const types=[...new Set(rows.map(r=>r.i.type))];
     b+=types.map(ty=>{const rs=rows.filter(r=>r.i.type===ty);
       return `<div><div class="flex justify-between items-center mb-1"><span class="text-xs px-2 py-0.5 rounded-md ${CHIP[ty]||''}">${esc(ty)}</span><span class="text-sm font-bold">${rp(rs.reduce((a,r)=>a+r.c,0))}</span></div>
-      ${rs.map(r=>{const d=detail(r.i,r.s,t);return `<div class="flex gap-2 text-xs py-1.5 border-b"><div class="flex-1 min-w-0"><p class="truncate">${esc(r.i.label)} <span class="text-slate-400">· ${esc(r.s.place)}</span></p>
-        <p class="text-[10px] text-slate-400">${fmtTab(r.s.date)} ${esc(r.s.time)}${d?' · '+esc(d):''}</p></div><span class="font-medium shrink-0">${rp(r.c)}</span></div>`}).join('')}</div>`}).join('')||'<p class="text-sm text-slate-400">Belum ada biaya di kategori ini.</p>';
+      ${rs.map(r=>catRow(r,t)).join('')}</div>`}).join('')||'<p class="text-sm text-slate-400">Belum ada biaya di kategori ini.</p>';
   }
   const days=[...new Set(rows.map(r=>r.s.date))].sort();
   b+=`<div><p class="text-xs font-semibold text-slate-500 mb-1">PER HARI</p>${days.map(d=>`<div class="flex justify-between text-sm py-1 border-b"><span>${fmtTab(d)}</span><span class="font-medium">${rp(rows.filter(r=>r.s.date===d).reduce((a,r)=>a+r.c,0))}</span></div>`).join('')}</div>`;
